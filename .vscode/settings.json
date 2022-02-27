@@ -1,0 +1,5 @@
+{
+    "editor.rulers": [100],
+    "editor.defaultFormatter": "statiolake.vscode-rustfmt",
+    "editor.formatOnSave": true,
+}
