@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::fmt::format;
 use std::fs::File;
+use std::os::unix::prelude::AsRawFd;
 use std::process::{exit, Stdio};
 use std::process::{Child, Command};
 
@@ -8,8 +8,10 @@ pub struct Program {
     pub name: String,
     pub command: String,
     pub stdout_path: Option<String>,
+    pub stdout_fd: i32,
     pub stderr_path: Option<String>,
-    process: Option<Child>,
+    pub stderr_fd: i32,
+    pid: u32,
 }
 
 impl Program {
@@ -21,11 +23,13 @@ impl Program {
             command: cmd,
             stdout_path: program_cfg["stdout"].clone(),
             stderr_path: program_cfg["stderr"].clone(),
-            process: None,
+            stdout_fd: -1,
+            stderr_fd: -1,
+            pid: 0,
         }
     }
 
-    pub fn start(mut self) {
+    pub fn start(&mut self) {
         println!("starting {}", self.name);
         let mut child = Command::new(self.command.clone());
 
@@ -35,6 +39,7 @@ impl Program {
                 child.stdout(Stdio::null());
             } else {
                 let file = open_file(path);
+                self.stdout_fd = file.as_raw_fd();
                 child.stdout(file);
             }
         }
@@ -44,14 +49,16 @@ impl Program {
                 child.stdout(Stdio::null());
             } else {
                 let file = open_file(path);
-        // child.stdout(self.stdout.unwrap());
-        // child.stderr(self.stderr.unwrap());
+                self.stderr_fd = file.as_raw_fd();
                 child.stderr(file);
             }
         }
-        self.process = Some(child.spawn().expect("Failed to spawn child process"));
+        let child = child.spawn().expect("Failed to spawn child process");
+        self.pid = child.id();
         println!("{} is started", self.name);
     }
+
+    // pub fn kill(mut self) {}
 }
 
 fn get_command(section: &str, command: &Option<String>) -> String {
@@ -59,17 +66,17 @@ fn get_command(section: &str, command: &Option<String>) -> String {
     if cmd.is_none() || cmd.clone().unwrap().eq("") {
         println!("Config: command is not given for `{}`", section);
         exit(1);
-        }
+    }
     cmd.unwrap()
 }
 
 fn open_file(path: String) -> File {
     match File::create(&path) {
-            Err(e) => {
-                println!("Config Error:");
+        Err(e) => {
+            println!("Config Error:");
             println!("=> `{}`: {}", path, e);
-                exit(e.raw_os_error().unwrap());
-            }
+            exit(e.raw_os_error().unwrap());
+        }
         Ok(file) => return file,
     }
 }

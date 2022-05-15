@@ -12,10 +12,13 @@ fn main() {
     for (section, program_cfg) in config.into_iter() {
         let prg = Program::new(section, program_cfg);
         programs.push(prg);
-        // if programs.
     }
 
-    // for prg in programs.into_iter() {
-    //     println!("{}", prg.to_string());
+    for prg in &mut programs {
+        prg.start();
+    }
+    while true {}
+    // for prg in programs {
+    //     prg.kill();
     // }
 }
