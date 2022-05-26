@@ -14,10 +14,9 @@ fn main() {
         programs.push(prg);
     }
 
-    for prg in &mut programs {
-        prg.start();
-    }
-    while true {}
+    // for prg in &mut programs {
+    //     prg.start();
+    // }
     // for prg in programs {
     //     prg.kill();
     // }

@@ -1,26 +1,42 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::os::unix::prelude::AsRawFd;
-use std::process::{exit, Stdio};
-use std::process::{Child, Command};
+use std::process::{exit, Child, Command, Stdio};
+
+// pub enum AutoRestart {
+//     NEVER,
+//     UNEXPECTED,
+//     ALWAYS,
+// }
 
 pub struct Program {
     pub name: String,
-    pub command: String,
+    pub cmd: String,
     pub stdout_path: Option<String>,
-    pub stdout_fd: i32,
     pub stderr_path: Option<String>,
-    pub stderr_fd: i32,
+    stdout_fd: i32,
+    stderr_fd: i32,
     pid: u32,
+    // numprocs: u8,
+    // umask: u8,
+    // workingdir: Option<String>,
+    // autostart: bool,
+    // autorestart: AutoRestart,
+    // exitcodes: Vec<i8>,
+    // startretries: u8,
+    // starttime: u8,
+    // stoptime: u8,
+    // stopsignal: Vec<u8>,
+    // env: HashMap<String, Option<String>>,
 }
 
 impl Program {
     pub fn new(section: String, program_cfg: HashMap<String, Option<String>>) -> Program {
-        let cmd = get_command(&section, &program_cfg["command"]);
+        let cmd = get_cmd(&section, &program_cfg["cmd"]);
 
         Program {
             name: section,
-            command: cmd,
+            cmd: cmd,
             stdout_path: program_cfg["stdout"].clone(),
             stderr_path: program_cfg["stderr"].clone(),
             stdout_fd: -1,
@@ -31,7 +47,7 @@ impl Program {
 
     pub fn start(&mut self) {
         println!("starting {}", self.name);
-        let mut child = Command::new(self.command.clone());
+        let mut child = Command::new(self.cmd.clone());
 
         if (&self.stdout_path).is_some() {
             let path = self.stdout_path.clone().unwrap();
@@ -57,14 +73,12 @@ impl Program {
         self.pid = child.id();
         println!("{} is started", self.name);
     }
-
-    // pub fn kill(mut self) {}
 }
 
-fn get_command(section: &str, command: &Option<String>) -> String {
-    let cmd = command.clone();
+fn get_cmd(section: &str, cmd: &Option<String>) -> String {
+    let cmd = cmd.clone();
     if cmd.is_none() || cmd.clone().unwrap().eq("") {
-        println!("Config: command is not given for `{}`", section);
+        println!("Config: cmd is not given for `{}`", section);
         exit(1);
     }
     cmd.unwrap()
